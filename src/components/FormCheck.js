@@ -1,4 +1,4 @@
-import React, {useState, useEffect } from 'react';
+import React, {useState } from 'react';
 import validate from '../validations/validateInfo';
 import useForm from '../validations/useForm'
 import './Form.css';
@@ -7,27 +7,38 @@ import FormInvalid from './FormInvalid';
 
 const FormCheck = ({ submitForm }) => {
 
-  const [imei,setImei] = useState('');
   const [issubmitted, setisSubmitted] = useState(false);
   const [invalidrequest, setInvalidrequest] = useState(false);
   const [loading, isloading] = useState(false);
+  const [fetchedData, setfetchedData] = useState(null);
 
   const { handleChange, handleSubmit, values, errors } = useForm(
     submitForm,
     validate
   );
 
+  const handlestatechange = (value) => {
+   setisSubmitted(value);
+  }
+
+  const handleinvalidstate= (value1,value2,value3) => {
+    setInvalidrequest(value1);
+    setisSubmitted(value2);
+    isloading(value3)
+   }
+
+
   const compareImei = async () => {
     isloading(true);
     const response = await fetch(`https://api-qa.reachmobile.com/v0/imei/info/${values.checkImei}`);
     const data = await response.json();
-    
+    setfetchedData(data.data);
 
     if(!response.ok){
         setInvalidrequest(true);
     }else{
     
-      if(data.data.imei == values.checkImei && data.data.isValid ){
+      if(data.data.imei === values.checkImei && data.data.isValid ){
         console.log('true');
         setisSubmitted(true); 
         isloading(false);
@@ -66,7 +77,7 @@ const FormCheck = ({ submitForm }) => {
             value={values.checkImei}
             onChange={handleChange}
           />
-          {<p style={{textAlign: 'center'}}>{values.checkImei.length <= 15? 
+          {<p style={{textAlign: 'center'}}><p style={{color: 'red'}}>Please enter no more than 15 letters</p> {values.checkImei.length <= 15? 
           values.checkImei.length : null}/15</p>}
           {errors.checkImei && <p>{errors.checkImei}</p>}
         </div>
@@ -85,7 +96,11 @@ const FormCheck = ({ submitForm }) => {
 
       </form>
 
-      : !invalidrequest? <FormSuccess /> : <FormInvalid />
+      : !invalidrequest? <FormSuccess handlestatechange={handlestatechange} supportedCarriers={fetchedData.supportedCarriers} model={fetchedData.model} mode={fetchedData.mode}
+      wifiCalling={fetchedData.wifiCalling} hdVoice={fetchedData.hdVoice} verizonCostEstimate={fetchedData.verizonCostEstimate}
+      />
+      
+      : <FormInvalid handleinvalidstate = {handleinvalidstate} />
 }
 
      
